@@ -1,0 +1,28 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "data": {
+                    "province": "省份"
+                },
+                "title": "省份"
+            },
+            "city": {
+                "data": {
+                    "station_code": "城市",
+                    "name": "名称"
+                },
+                "description": "请选择城市。名称默认是省份+城市。",
+                "title": "城市"
+            },
+            "manual": {
+                "data": {
+                    "station_code": "地区编码",
+                    "name": "名称"
+                },
+                "description": "无法自动获取城市列表，请手动设置地区编码或直接退出。地区编码请参考http://www.nmc.cn",
+                "title": "手动设置"
+            }
+        }
+    }
+}

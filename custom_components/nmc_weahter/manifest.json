@@ -1,0 +1,10 @@
+  {
+    "domain": "nmc_weather",
+    "name": "NMC Weather",
+    "config_flow": true,
+    "documentation": "https://github.com/ryanh7/ha-nmc-weather",
+    "dependencies": [],
+    "codeowners": ["ryanh7"],
+    "requirements": [],
+    "version": "1.0.0"
+  }

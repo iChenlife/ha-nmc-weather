@@ -1,0 +1,27 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "data": {
+                    "province": "Province"
+                },
+                "title": "Province"
+            },
+            "city": {
+                "data": {
+                    "station_code": "City",
+                    "name": "Name"
+                },
+                "title": "City"
+            },
+            "manual": {
+                "data": {
+                    "station_code": "Station Code",
+                    "name": "Name"
+                },
+                "description": "Please refer to http://www.nmc.cn",
+                "title": "Station"
+            }
+        }
+    }
+}

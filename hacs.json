@@ -1,0 +1,7 @@
+{
+  "name": "NMC Weather",
+  "homeassistant": "0.115.0",
+  "country": "CN",
+  "domains": ["weather"],
+  "render_readme": true
+}
