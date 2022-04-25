@@ -164,7 +164,11 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
 
     @property
     def pressure(self):
-        return round(float(self.coordinator.data['real']['weather']['airpressure']) / 100, 2)
+        pressure = self.coordinator.data['real']['weather']['airpressure']
+        if pressure != 9999:
+            return pressure
+            
+        return self.coordinator.data['passedchart'][0]['pressure']
 
 
     @property
