@@ -12,7 +12,7 @@ from .weather import NMCData
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_INTERVAL = timedelta(minutes=60)
+UPDATE_INTERVAL = timedelta(minutes=10)
 
 PLATFORMS = [Platform.WEATHER]
 
@@ -35,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         update_method=_async_update_data,
         update_interval=UPDATE_INTERVAL,
     )
-    await coordinator.async_refresh()
+    await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][config_entry.entry_id] = coordinator
 

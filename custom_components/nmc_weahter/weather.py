@@ -2,7 +2,7 @@ from datetime import datetime
 import requests
 import json
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -41,6 +41,7 @@ CONDITION_MAP = {
     '大雾': ATTR_CONDITION_FOG,
     '小雨': ATTR_CONDITION_RAINY,
     '中雨': ATTR_CONDITION_RAINY,
+    '小到中雨': ATTR_CONDITION_RAINY,
     '大雨': ATTR_CONDITION_POURING,
     '暴雨': ATTR_CONDITION_POURING,
     '雾': ATTR_CONDITION_FOG,
@@ -85,10 +86,10 @@ class NMCData():
 class NMCWeather(CoordinatorEntity, WeatherEntity):
 
     def __init__(self, hass, name, station_code, coordinator):
+        super().__init__(coordinator)
         self.hass = hass
         self._name = name
         self.station_code = station_code
-        self.coordinator = coordinator
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.station_code)},
