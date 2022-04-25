@@ -159,7 +159,7 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
     @property
     def forecast(self):
         forecast_data = []
-        for i in range(0, len(self.coordinator.data['predict']['detail'])):
+        for i in range(1, len(self.coordinator.data['predict']['detail'])):
             time_str = self.coordinator.data['predict']['detail'][i]['date']
             data_dict = {
                 ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
