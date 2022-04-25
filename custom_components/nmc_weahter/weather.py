@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 import json
+import logging
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
@@ -63,6 +64,8 @@ CONDITION_MAP = {
     
 }
 
+_LOGGER = logging.getLogger(__name__)
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -97,6 +100,28 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
             manufacturer=MANUFACTURER,
             model=self.station_code
         )
+
+    def _condition_map(self, condition):
+        if (c:=CONDITION_MAP.get(condition)) is not None:
+            return c
+        if '中雨' in condition:
+            return ATTR_CONDITION_RAINY
+        if '暴雨' in condition:
+            return ATTR_CONDITION_POURING
+        if '雨' in condition:
+            return ATTR_CONDITION_RAINY
+        if '雪' in condition:
+            return ATTR_CONDITION_SNOWY
+        if '沙' in condition:
+            return ATTR_CONDITION_FOG
+        if '云' in condition:
+            return ATTR_CONDITION_CLOUDY
+        if '雾' in condition:
+            return ATTR_CONDITION_FOG
+
+        _LOGGER.error(f'unkown condition: {condition}')
+        return ATTR_CONDITION_EXCEPTIONAL
+        
     
     @property
     def unique_id(self):
@@ -108,9 +133,9 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
         return self._name
 
     @property
-    def state(self):
+    def condition(self):
         skycon = self.coordinator.data['real']['weather']['info']
-        return CONDITION_MAP.get(skycon)
+        return self._condition_map(skycon)
 
     @property
     def temperature(self):
@@ -165,7 +190,7 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
             time_str = self.coordinator.data['predict']['detail'][i]['date']
             data_dict = {
                 ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
-                ATTR_FORECAST_CONDITION: CONDITION_MAP[self.coordinator.data['predict']['detail'][i]['day']['weather']['info']],
+                ATTR_FORECAST_CONDITION: self._condition_map(self.coordinator.data['predict']['detail'][i]['day']['weather']['info']),
                 ATTR_FORECAST_TEMP: self.coordinator.data['tempchart'][i+7]['max_temp'],
                 ATTR_FORECAST_TEMP_LOW: self.coordinator.data['tempchart'][i+7]['min_temp'],
                 ATTR_FORECAST_WIND_BEARING: self.coordinator.data['predict']['detail'][i]['day']['wind']['direct'],
