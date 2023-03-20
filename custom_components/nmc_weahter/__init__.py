@@ -17,10 +17,10 @@ UPDATE_INTERVAL = timedelta(minutes=10)
 PLATFORMS = [Platform.WEATHER]
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
-    weather_data = NMCData(hass, config_entry.data[CONF_STATION_CODE])
+    weather_data = NMCData(hass, entry.data[CONF_STATION_CODE])
 
     async def _async_update_data():
         try:
@@ -37,9 +37,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     )
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data[DOMAIN][config_entry.entry_id] = coordinator
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    hass.config_entries.async_setup_platforms(config_entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 

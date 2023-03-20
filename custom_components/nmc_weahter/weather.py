@@ -10,10 +10,21 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from homeassistant.components.weather import (
-    WeatherEntity, ATTR_FORECAST_CONDITION,
-    ATTR_FORECAST_TEMP, ATTR_FORECAST_TEMP_LOW, ATTR_FORECAST_TIME, ATTR_FORECAST_WIND_BEARING, ATTR_FORECAST_WIND_SPEED)
+    WeatherEntity,
+    ATTR_FORECAST_CONDITION,
+    ATTR_FORECAST_NATIVE_TEMP,
+    ATTR_FORECAST_NATIVE_TEMP_LOW,
+    ATTR_FORECAST_TIME,
+    ATTR_FORECAST_WIND_BEARING,
+    ATTR_FORECAST_NATIVE_WIND_SPEED
+)
 
-from homeassistant.const import (TEMP_CELSIUS, CONF_NAME)
+from homeassistant.const import (
+    CONF_NAME,
+    UnitOfSpeed,
+    UnitOfPressure,
+    UnitOfTemperature
+)
 
 from .const import DOMAIN, MANUFACTURER, NAME, CONF_STATION_CODE
 
@@ -138,38 +149,42 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
         return self._condition_map(skycon)
 
     @property
-    def temperature(self):
+    def native_temperature(self):
         return self.coordinator.data['real']['weather']['temperature']
 
     @property
-    def temperature_unit(self):
-        return TEMP_CELSIUS
+    def native_temperature_unit(self):
+        return UnitOfTemperature.CELSIUS
 
     @property
     def humidity(self):
         return float(self.coordinator.data['real']['weather']['humidity']) 
 
     @property
-    def wind_speed(self):
+    def native_wind_speed(self):
         return self.coordinator.data['real']['wind']['speed']
+
+    @property
+    def native_wind_speed_unit(self):
+        """Return the current windspeed."""
+        return UnitOfSpeed.METERS_PER_SECOND
 
     @property
     def wind_bearing(self):
         return self.coordinator.data['real']['wind']['direct']
 
     @property
-    def wind_speed(self):
-        return self.coordinator.data['real']['wind']['power']
-
-
-    @property
-    def pressure(self):
+    def native_pressure(self):
         pressure = self.coordinator.data['real']['weather']['airpressure']
         if pressure != 9999:
             return pressure
             
         return self.coordinator.data['passedchart'][0]['pressure']
 
+    @property
+    def native_pressure_unit(self):
+        """Return the current pressure unit."""
+        return UnitOfPressure.HPA
 
     @property
     def attribution(self):
@@ -195,10 +210,10 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
             data_dict = {
                 ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
                 ATTR_FORECAST_CONDITION: self._condition_map(self.coordinator.data['predict']['detail'][i]['day']['weather']['info']),
-                ATTR_FORECAST_TEMP: self.coordinator.data['tempchart'][i+7]['max_temp'],
-                ATTR_FORECAST_TEMP_LOW: self.coordinator.data['tempchart'][i+7]['min_temp'],
+                ATTR_FORECAST_NATIVE_TEMP: self.coordinator.data['tempchart'][i+7]['max_temp'],
+                ATTR_FORECAST_NATIVE_TEMP_LOW: self.coordinator.data['tempchart'][i+7]['min_temp'],
                 ATTR_FORECAST_WIND_BEARING: self.coordinator.data['predict']['detail'][i]['day']['wind']['direct'],
-                ATTR_FORECAST_WIND_SPEED: self.coordinator.data['predict']['detail'][i]['day']['wind']['power']
+                ATTR_FORECAST_NATIVE_WIND_SPEED: self.coordinator.data['predict']['detail'][i]['day']['wind']['power']
             }
             forecast_data.append(data_dict)
 
