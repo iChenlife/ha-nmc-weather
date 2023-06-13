@@ -57,7 +57,6 @@ CONDITION_MAP = {
     '阵雨': ATTR_CONDITION_RAINY,
     '大雨': ATTR_CONDITION_POURING,
     '暴雨': ATTR_CONDITION_POURING,
-    '雾': ATTR_CONDITION_FOG,
     '小雪': ATTR_CONDITION_SNOWY,
     '中雪': ATTR_CONDITION_SNOWY,
     '大雪': ATTR_CONDITION_SNOWY,
@@ -99,6 +98,8 @@ class NMCData():
         return json.loads(request_data.content)['data']
 
 class NMCWeather(CoordinatorEntity, WeatherEntity):
+
+    _attr_translation_key = "nmc"
 
     def __init__(self, hass, name, station_code, coordinator):
         super().__init__(coordinator)
