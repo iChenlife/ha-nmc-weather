@@ -8,14 +8,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from homeassistant.components.weather import (
-    ATTR_FORECAST_CONDITION,
-    ATTR_FORECAST_NATIVE_TEMP,
-    ATTR_FORECAST_TIME,
-    ATTR_FORECAST_WIND_BEARING,
-    ATTR_FORECAST_NATIVE_WIND_SPEED
-)
-
 from homeassistant.const import (
     CONF_NAME,
     UnitOfSpeed,
@@ -38,6 +30,12 @@ from homeassistant.components.weather import (
     ATTR_CONDITION_WINDY,
     ATTR_CONDITION_POURING,
     ATTR_CONDITION_EXCEPTIONAL,
+    ATTR_FORECAST_CONDITION,
+    ATTR_FORECAST_NATIVE_TEMP,
+    ATTR_FORECAST_NATIVE_TEMP_LOW,
+    ATTR_FORECAST_TIME,
+    ATTR_FORECAST_WIND_BEARING,
+    ATTR_FORECAST_NATIVE_WIND_SPEED,
     ATTR_FORECAST_IS_DAYTIME,
     WeatherEntityFeature,
     Forecast,
@@ -102,7 +100,7 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
 
     _attr_translation_key = "nmc"
     _attr_supported_features = (
-        WeatherEntityFeature.FORECAST_TWICE_DAILY
+        WeatherEntityFeature.FORECAST_DAILY | WeatherEntityFeature.FORECAST_TWICE_DAILY
     )
 
     def __init__(self, hass, name, station_code, coordinator):
@@ -223,6 +221,24 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
                     ATTR_FORECAST_IS_DAYTIME: day_time == "day"
                 }
                 forecast_data.append(data_dict)
+        return forecast_data
+    
+    @callback
+    def _async_forecast_daily(self) -> list[Forecast] | None:
+        forecast_data = []
+        for detail in self.coordinator.data['predict']['detail'][1:]:
+            time = datetime.strptime(detail['date'], '%Y-%m-%d')
+            temp_day = detail["day"]['weather']['temperature']
+            temp_night = detail["night"]['weather']['temperature']
+            data_dict = {
+                ATTR_FORECAST_TIME: time,
+                ATTR_FORECAST_CONDITION: self._condition_map(detail["day"]['weather']['info']),
+                ATTR_FORECAST_NATIVE_TEMP: max(temp_day, temp_night),
+                ATTR_FORECAST_NATIVE_TEMP_LOW: min(temp_day, temp_night),
+                ATTR_FORECAST_WIND_BEARING: detail["day"]['wind']['direct'],
+                ATTR_FORECAST_NATIVE_WIND_SPEED: detail["day"]['wind']['power'],
+            }
+            forecast_data.append(data_dict)
         return forecast_data
     
     
