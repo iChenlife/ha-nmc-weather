@@ -7,13 +7,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from homeassistant.components.weather import (
-    WeatherEntity,
     ATTR_FORECAST_CONDITION,
     ATTR_FORECAST_NATIVE_TEMP,
-    ATTR_FORECAST_NATIVE_TEMP_LOW,
     ATTR_FORECAST_TIME,
     ATTR_FORECAST_WIND_BEARING,
     ATTR_FORECAST_NATIVE_WIND_SPEED
@@ -40,7 +37,11 @@ from homeassistant.components.weather import (
     ATTR_CONDITION_SUNNY,
     ATTR_CONDITION_WINDY,
     ATTR_CONDITION_POURING,
-    ATTR_CONDITION_EXCEPTIONAL
+    ATTR_CONDITION_EXCEPTIONAL,
+    ATTR_FORECAST_IS_DAYTIME,
+    WeatherEntityFeature,
+    Forecast,
+    SingleCoordinatorWeatherEntity
 )
 
 CONDITION_MAP = {
@@ -97,9 +98,12 @@ class NMCData():
             requests.get, f"http://www.nmc.cn/rest/weather?stationid={self.station_code}")
         return json.loads(request_data.content)['data']
 
-class NMCWeather(CoordinatorEntity, WeatherEntity):
+class NMCWeather(SingleCoordinatorWeatherEntity):
 
     _attr_translation_key = "nmc"
+    _attr_supported_features = (
+        WeatherEntityFeature.FORECAST_TWICE_DAILY
+    )
 
     def __init__(self, hass, name, station_code, coordinator):
         super().__init__(coordinator)
@@ -203,19 +207,21 @@ class NMCWeather(CoordinatorEntity, WeatherEntity):
     def alert(self):
         return self.coordinator.data['real']['warn']['alert']
 
-    @property
-    def forecast(self):
+    @callback
+    def _async_forecast_twice_daily(self) -> list[Forecast] | None:
         forecast_data = []
         for i in range(1, len(self.coordinator.data['predict']['detail'])):
             time_str = self.coordinator.data['predict']['detail'][i]['date']
-            data_dict = {
-                ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
-                ATTR_FORECAST_CONDITION: self._condition_map(self.coordinator.data['predict']['detail'][i]['day']['weather']['info']),
-                ATTR_FORECAST_NATIVE_TEMP: self.coordinator.data['tempchart'][i+7]['max_temp'],
-                ATTR_FORECAST_NATIVE_TEMP_LOW: self.coordinator.data['tempchart'][i+7]['min_temp'],
-                ATTR_FORECAST_WIND_BEARING: self.coordinator.data['predict']['detail'][i]['day']['wind']['direct'],
-                ATTR_FORECAST_NATIVE_WIND_SPEED: self.coordinator.data['predict']['detail'][i]['day']['wind']['power']
-            }
-            forecast_data.append(data_dict)
-
+            for time in ("day", "night"):
+                predict = self.coordinator.data['predict']['detail'][i][time]
+                data_dict = {
+                    ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
+                    ATTR_FORECAST_CONDITION: self._condition_map(predict['weather']['info']),
+                    ATTR_FORECAST_NATIVE_TEMP: predict['weather']['temperature'],
+                    ATTR_FORECAST_WIND_BEARING: predict['wind']['direct'],
+                    ATTR_FORECAST_NATIVE_WIND_SPEED: predict['wind']['power'],
+                    ATTR_FORECAST_IS_DAYTIME: time == "day"
+                }
+                forecast_data.append(data_dict)
         return forecast_data
+    
