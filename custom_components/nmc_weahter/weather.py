@@ -210,18 +210,20 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
     @callback
     def _async_forecast_twice_daily(self) -> list[Forecast] | None:
         forecast_data = []
-        for i in range(1, len(self.coordinator.data['predict']['detail'])):
-            time_str = self.coordinator.data['predict']['detail'][i]['date']
-            for time in ("day", "night"):
-                predict = self.coordinator.data['predict']['detail'][i][time]
+        for detail in self.coordinator.data['predict']['detail'][1:]:
+            time = datetime.strptime(detail['date'], '%Y-%m-%d')
+            for day_time in ("day", "night"):
+                predict = detail[day_time]
                 data_dict = {
-                    ATTR_FORECAST_TIME: datetime.strptime(time_str, '%Y-%m-%d'),
+                    ATTR_FORECAST_TIME: time,
                     ATTR_FORECAST_CONDITION: self._condition_map(predict['weather']['info']),
                     ATTR_FORECAST_NATIVE_TEMP: predict['weather']['temperature'],
                     ATTR_FORECAST_WIND_BEARING: predict['wind']['direct'],
                     ATTR_FORECAST_NATIVE_WIND_SPEED: predict['wind']['power'],
-                    ATTR_FORECAST_IS_DAYTIME: time == "day"
+                    ATTR_FORECAST_IS_DAYTIME: day_time == "day"
                 }
                 forecast_data.append(data_dict)
         return forecast_data
+    
+    
     
