@@ -30,7 +30,7 @@ UPDATE_INTERVAL = timedelta(minutes=10)
 class NMCDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, name, config):
         self.station_code = config.get(CONF_STATION_CODE)
-        self._images = config.get(CONF_IMAGES)
+        self._images = config.get(CONF_IMAGES, [])
         super().__init__(
             hass,
             _LOGGER,

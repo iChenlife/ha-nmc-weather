@@ -63,7 +63,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities([NMCImageEntity(hass, coordinator, description)
-                        for description in CAMERA_TYPE if description.key in (config_entry.data[CONF_IMAGES] or [])])
+                        for description in CAMERA_TYPE if description.key in (config_entry.data.get(CONF_IMAGES, []))])
 
 
 class NMCImageEntity(CoordinatorEntity, ImageEntity):
