@@ -1,14 +1,11 @@
 from datetime import datetime, date, timezone, timedelta
-import requests
-import json
 import re
 import logging
-from urllib.parse import urljoin
 from lxml import html
+from collections import OrderedDict
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -19,7 +16,7 @@ from homeassistant.const import (
     UnitOfTemperature
 )
 
-from .const import DOMAIN, MANUFACTURER, NAME, CONF_STATION_CODE
+from .const import DOMAIN, NAME, DATA_FORECAST, DATA_FORECAST_HOURLY
 
 from homeassistant.components.weather import (
     ATTR_CONDITION_HAIL,
@@ -91,24 +88,8 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]
     config = entry.data
     async_add_entities([NMCWeather(
-        hass, name=config.get(CONF_NAME, NAME),  station_code=config.get(CONF_STATION_CODE), coordinator=coordinator
+        hass, name=config.get(CONF_NAME, NAME), coordinator=coordinator
     )])
-
-
-class NMCData():
-    def __init__(self, hass, station_code):
-        self.hass = hass
-        self.station_code = station_code
-
-    async def fetch_data(self):
-        request_data = await self.hass.async_add_executor_job(
-            requests.get, f"http://www.nmc.cn/rest/weather?stationid={self.station_code}")
-        data = json.loads(request_data.content)['data']
-        url = data["predict"]["station"]["url"]
-        request_data = await self.hass.async_add_executor_job(
-            requests.get, urljoin("http://www.nmc.cn", url))
-        data["html"] = request_data.content
-        return data
 
 
 def get_value(string):
@@ -125,17 +106,12 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
         WeatherEntityFeature.FORECAST_HOURLY | WeatherEntityFeature.FORECAST_DAILY | WeatherEntityFeature.FORECAST_TWICE_DAILY
     )
 
-    def __init__(self, hass, name, station_code, coordinator):
+    def __init__(self, hass, name, coordinator):
         super().__init__(coordinator)
         self.hass = hass
         self._name = name
-        self.station_code = station_code
-
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.station_code)},
-            manufacturer=MANUFACTURER,
-            model=self.station_code
-        )
+        self._attr_unique_id = f"{coordinator.config_entry.unique_id}-weather"
+        self._attr_device_info = coordinator.device_info
 
     def _condition_map(self, condition):
         if (c := CONDITION_MAP.get(condition)) is not None:
@@ -159,21 +135,17 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
         return ATTR_CONDITION_EXCEPTIONAL
 
     @property
-    def unique_id(self):
-        return str(self.station_code)
-
-    @property
     def name(self):
         return self._name
 
     @property
     def condition(self):
-        skycon = self.coordinator.data['real']['weather']['info']
+        skycon = self.coordinator.data[DATA_FORECAST]['real']['weather']['info']
         return self._condition_map(skycon)
 
     @property
     def native_temperature(self):
-        return self.coordinator.data['real']['weather']['temperature']
+        return self.coordinator.data[DATA_FORECAST]['real']['weather']['temperature']
 
     @property
     def native_temperature_unit(self):
@@ -181,11 +153,11 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
 
     @property
     def humidity(self):
-        return float(self.coordinator.data['real']['weather']['humidity'])
+        return float(self.coordinator.data[DATA_FORECAST]['real']['weather']['humidity'])
 
     @property
     def native_wind_speed(self):
-        return self.coordinator.data['real']['wind']['speed']
+        return self.coordinator.data[DATA_FORECAST]['real']['wind']['speed']
 
     @property
     def native_wind_speed_unit(self):
@@ -194,15 +166,15 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
 
     @property
     def wind_bearing(self):
-        return self.coordinator.data['real']['wind']['direct']
+        return self.coordinator.data[DATA_FORECAST]['real']['wind']['direct']
 
     @property
     def native_pressure(self):
-        pressure = self.coordinator.data['real']['weather']['airpressure']
+        pressure = self.coordinator.data[DATA_FORECAST]['real']['weather']['airpressure']
         if pressure != 9999:
             return pressure
 
-        return self.coordinator.data['passedchart'][0]['pressure']
+        return self.coordinator.data[DATA_FORECAST]['passedchart'][0]['pressure']
 
     @property
     def native_pressure_unit(self):
@@ -215,20 +187,20 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
 
     @property
     def aqi(self):
-        return self.coordinator.data['air']['aqi']
+        return self.coordinator.data[DATA_FORECAST]['air']['aqi']
 
     @property
     def aqi_description(self):
-        return self.coordinator.data['air']['aqi']
+        return self.coordinator.data[DATA_FORECAST]['air']['aqi']
 
     @property
     def alert(self):
-        return self.coordinator.data['real']['warn']['alert']
+        return self.coordinator.data[DATA_FORECAST]['real']['warn']['alert']
 
     @callback
     def _async_forecast_twice_daily(self) -> list[Forecast] | None:
         forecast_data = []
-        for detail in self.coordinator.data['predict']['detail'][1:]:
+        for detail in self.coordinator.data[DATA_FORECAST]['predict']['detail'][1:]:
             time = datetime.strptime(detail['date'], '%Y-%m-%d')
             for day_time in ("day", "night"):
                 predict = detail[day_time]
@@ -246,7 +218,7 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
     @callback
     def _async_forecast_daily(self) -> list[Forecast] | None:
         forecast_data = []
-        for detail in self.coordinator.data['predict']['detail'][1:]:
+        for detail in self.coordinator.data[DATA_FORECAST]['predict']['detail'][1:]:
             time = datetime.strptime(detail['date'], '%Y-%m-%d')
             temp_day = detail["day"]['weather']['temperature']
             temp_night = detail["night"]['weather']['temperature']
@@ -263,9 +235,9 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
 
     @callback
     def _async_forecast_hourly(self) -> list[Forecast] | None:
-        forecast_data = []
-        
-        tree = html.fromstring(self.coordinator.data['html'])
+        forecast_data = OrderedDict()
+
+        tree = html.fromstring(self.coordinator.data[DATA_FORECAST_HOURLY])
 
         for i in range(0, 7):
             div_date = tree.xpath(
@@ -278,9 +250,9 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
                 break
             month_day = datetime.strptime(matches[0], "%m/%d")
             now = dt_util.now(timezone(timedelta(hours=8)))
-            if i == 0 and month_day.date().replace(year=now.year) != now.date():
-                # 网页上的bug，过期日期的小时预报日期不正常，跳过
-                continue
+            # if i == 0 and month_day.date().replace(year=now.year) != now.date():
+            #     # 网页上的bug，过期日期的小时预报日期不正常，跳过
+            #     continue
             predict_date = date(year=now.year if month_day.month >=
                                 now.month else now.year + 1, month=month_day.month, day=month_day.day)
 
@@ -325,6 +297,7 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
                 if "%" in humidity_str and (humidity := get_value(humidity_str)) is not None:
                     predict[ATTR_FORECAST_HUMIDITY] = humidity
 
-                forecast_data.append(predict)
+                # 网页bug，首日预报常常错误，以后续解析的预报为准
+                forecast_data[predict[ATTR_FORECAST_TIME]] = predict
 
-        return forecast_data
+        return forecast_data.values()

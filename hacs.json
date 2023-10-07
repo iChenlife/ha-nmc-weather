@@ -2,6 +2,6 @@
   "name": "NMC Weather",
   "homeassistant": "2023.9.1",
   "country": "CN",
-  "domains": ["weather"],
+  "domains": ["weather", "camera"],
   "render_readme": true
 }
