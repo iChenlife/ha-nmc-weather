@@ -8,6 +8,12 @@ from lxml import html
 from .const import (
     DOMAIN,
     MANUFACTURER,
+    CONF_STATION_CODE,
+    CONF_IMAGES,
+    CONF_IMAGE_MAX_TEMPERATURE24,
+    CONF_IMAGE_TEMPERATURE_HOURLY,
+    CONF_IMAGE_PRECIPITATION24,
+    CONF_IMAGE_RADAR,
     DATA_MAX_TEMPERATURE24,
     DATA_PRECIPITATION24,
     DATA_FORECAST,
@@ -22,8 +28,9 @@ UPDATE_INTERVAL = timedelta(minutes=10)
 
 
 class NMCDataUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, name, station_code):
-        self.station_code = station_code
+    def __init__(self, hass, name, config):
+        self.station_code = config.get(CONF_STATION_CODE)
+        self._images = config.get(CONF_IMAGES)
         super().__init__(
             hass,
             _LOGGER,
@@ -61,13 +68,16 @@ class NMCDataUpdateCoordinator(DataUpdateCoordinator):
 
         # 图片
         images = [
-            (DATA_MAX_TEMPERATURE24,
+            (CONF_IMAGE_MAX_TEMPERATURE24, DATA_MAX_TEMPERATURE24,
              "http://www.nmc.cn/publish/temperature/hight/24hour.html"),
-            (DATA_PRECIPITATION24, "http://www.nmc.cn/publish/precipitation/1-day.html"),
-            (DATA_RADAR, "http://nmc.cn/publish/radar/chinaall.html"),
-            (DATA_TEMPERATURE_HOURLY,
+            (CONF_IMAGE_PRECIPITATION24, DATA_PRECIPITATION24,
+             "http://www.nmc.cn/publish/precipitation/1-day.html"),
+            (CONF_IMAGE_RADAR, DATA_RADAR,
+             "http://nmc.cn/publish/radar/chinaall.html"),
+            (CONF_IMAGE_TEMPERATURE_HOURLY, DATA_TEMPERATURE_HOURLY,
              "http://nmc.cn/publish/observations/hourly-temperature.html")
         ]
-        for image_type, url in images:
-            data[image_type] = await self._get_image(url)
+        for conf_key, data_key, url in images:
+            if conf_key in self._images:
+                data[data_key] = await self._get_image(url)
         return data
