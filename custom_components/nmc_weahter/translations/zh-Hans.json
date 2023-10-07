@@ -24,26 +24,5 @@
                 "title": "手动设置"
             }
         }
-    },
-    "entity": {
-        "weather": {
-            "nmc": {
-                "state": {
-                    "sunny": "晴",
-                    "cloudy": "多云",
-                    "windy": "多风",
-                    "partlycloudy": "局部多云",
-                    "fog": "雾",
-                    "rainy": "雨",
-                    "pouring": "大雨",
-                    "snowy": "雪",
-                    "snowy-rainy": "雨夹雪",
-                    "lightning-rainy": "雷阵雨",
-                    "hail": "冰雹",
-                    "lightning": "雷",
-                    "exceptional": "未知"
-                }
-            }
-        }
     }
 }
