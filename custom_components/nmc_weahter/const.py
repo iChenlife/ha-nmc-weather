@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "nmc_weather"

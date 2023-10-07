@@ -248,13 +248,12 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
                 r'\d+/\d+', div_date[0].text_content().strip())
             if not matches:
                 break
-            month_day = datetime.strptime(matches[0], "%m/%d")
+            
             now = dt_util.now(timezone(timedelta(hours=8)))
-            # if i == 0 and month_day.date().replace(year=now.year) != now.date():
-            #     # 网页上的bug，过期日期的小时预报日期不正常，跳过
-            #     continue
-            predict_date = date(year=now.year if month_day.month >=
-                                now.month else now.year + 1, month=month_day.month, day=month_day.day)
+
+            # 网页上的bug，第一个当天预报有时不是显示当天日期
+            month_day = datetime.strptime(matches[0], "%m/%d") if i > 0 else now
+            predict_date = month_day.replace(year=now.year if month_day.month >= now.month else now.year + 1).date()
 
             div_day = tree.xpath(f'//*[@id="day{i}"]')
             if not len(div_day):

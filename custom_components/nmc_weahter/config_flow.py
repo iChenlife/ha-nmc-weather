@@ -30,12 +30,10 @@ IMAGES = {
 
 
 class NMCWeatherFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for Met Eireann component."""
 
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Handle a flow initialized by the user."""
         errors = {}
 
         if user_input is not None:

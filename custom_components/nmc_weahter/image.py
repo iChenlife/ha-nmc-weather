@@ -1,4 +1,3 @@
-"""Support for the Environment Canada radar imagery."""
 from __future__ import annotations
 from dataclasses import dataclass
 
@@ -25,7 +24,6 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
 
 @dataclass
 class NMCImageEntityDescription(ImageEntityDescription):
@@ -69,7 +67,6 @@ async def async_setup_entry(
 class NMCImageEntity(CoordinatorEntity, ImageEntity):
 
     def __init__(self, hass, coordinator, description):
-        """Initialize the camera."""
         super().__init__(coordinator)
         ImageEntity.__init__(self, hass)
 
@@ -83,8 +80,9 @@ class NMCImageEntity(CoordinatorEntity, ImageEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        data = self.coordinator.data.get(self._data_key)
-        if (data and data.get("url") != self._attr_image_url or data.get("update_time") != self._attr_image_last_updated):
+        if (data := self.coordinator.data.get(self._data_key)) is None:
+            return
+        if (data.get("url") != self._attr_image_url or data.get("update_time") != self._attr_image_last_updated):
             self._attr_image_url = data.get("url")
             self._cached_image = None
             self._attr_image_last_updated = data.get("update_time")
