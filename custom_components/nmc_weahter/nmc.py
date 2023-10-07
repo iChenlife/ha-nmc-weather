@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 from urllib.parse import urljoin
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.entity import DeviceInfo
@@ -38,10 +38,14 @@ class NMCDataUpdateCoordinator(DataUpdateCoordinator):
             model=self.station_code
         )
 
-    async def _get_image_url(self, html_url):
+    async def _get_image(self, html_url):
         request_data = await self.session.get(html_url)
         tree = html.fromstring(await request_data.text())
-        return tree.xpath('//img[@id="imgpath"]')[0].attrib["src"]
+        image = tree.xpath('//img[@id="imgpath"]')[0]
+        return {
+            "url": image.attrib["src"],
+            "update_time": datetime.strptime(image.attrib["data-time"], "%m/%d %H:%M").replace(year=datetime.now().year)
+        }
 
     async def _async_update_data(self):
         # 预报信息
@@ -61,8 +65,9 @@ class NMCDataUpdateCoordinator(DataUpdateCoordinator):
              "http://www.nmc.cn/publish/temperature/hight/24hour.html"),
             (DATA_PRECIPITATION24, "http://www.nmc.cn/publish/precipitation/1-day.html"),
             (DATA_RADAR, "http://nmc.cn/publish/radar/chinaall.html"),
-            (DATA_TEMPERATURE_HOURLY, "http://nmc.cn/publish/observations/hourly-temperature.html")
+            (DATA_TEMPERATURE_HOURLY,
+             "http://nmc.cn/publish/observations/hourly-temperature.html")
         ]
         for image_type, url in images:
-            data[image_type] = await self._get_image_url(url)
+            data[image_type] = await self._get_image(url)
         return data

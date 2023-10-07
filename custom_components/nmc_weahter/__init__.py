@@ -10,7 +10,7 @@ from .nmc import NMCDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.WEATHER, Platform.CAMERA]
+PLATFORMS = [Platform.WEATHER, Platform.IMAGE]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
