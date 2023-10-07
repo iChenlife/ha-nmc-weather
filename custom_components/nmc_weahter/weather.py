@@ -278,7 +278,7 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
                 break
             month_day = datetime.strptime(matches[0], "%m/%d")
             now = dt_util.now(timezone(timedelta(hours=8)))
-            if i == 0 and month_day.date() < now.date():
+            if i == 0 and month_day.date().replace(year=now.year) != now.date():
                 # 网页上的bug，过期日期的小时预报日期不正常，跳过
                 continue
             predict_date = date(year=now.year if month_day.month >=
