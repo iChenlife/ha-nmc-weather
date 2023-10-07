@@ -12,7 +12,8 @@ from .const import (
     DATA_PRECIPITATION24,
     DATA_FORECAST,
     DATA_FORECAST_HOURLY,
-    DATA_RADAR
+    DATA_RADAR,
+    DATA_TEMPERATURE_HOURLY
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,7 +60,8 @@ class NMCDataUpdateCoordinator(DataUpdateCoordinator):
             (DATA_MAX_TEMPERATURE24,
              "http://www.nmc.cn/publish/temperature/hight/24hour.html"),
             (DATA_PRECIPITATION24, "http://www.nmc.cn/publish/precipitation/1-day.html"),
-            (DATA_RADAR, "http://nmc.cn/publish/radar/chinaall.html")
+            (DATA_RADAR, "http://nmc.cn/publish/radar/chinaall.html"),
+            (DATA_TEMPERATURE_HOURLY, "http://nmc.cn/publish/observations/hourly-temperature.html")
         ]
         for image_type, url in images:
             data[image_type] = await self._get_image_url(url)

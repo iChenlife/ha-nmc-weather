@@ -110,7 +110,7 @@ class NMCWeather(SingleCoordinatorWeatherEntity):
         super().__init__(coordinator)
         self.hass = hass
         self._name = name
-        self._attr_unique_id = f"{coordinator.config_entry.unique_id}-weather"
+        self._attr_unique_id = f"nmc-{coordinator.config_entry.unique_id}-weather"
         self._attr_device_info = coordinator.device_info
 
     def _condition_map(self, condition):
