@@ -51,7 +51,7 @@ class NMCDataUpdateCoordinator(DataUpdateCoordinator):
         image = tree.xpath('//img[@id="imgpath"]')[0]
         return {
             "url": image.attrib["src"],
-            "update_time": datetime.strptime(image.attrib["data-time"], "%m/%d %H:%M").replace(year=datetime.now().year)
+            "update_time": datetime.strptime(f"{datetime.now().year}/{image.attrib['data-time']}", "%Y/%m/%d %H:%M")
         }
 
     async def _async_update_data(self):
